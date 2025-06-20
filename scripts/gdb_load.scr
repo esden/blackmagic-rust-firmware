@@ -1,0 +1,36 @@
+# Disable asking for confirmation. (All questions are automatically answered
+# with y if ran in batch mode, but it still prints warnings that don't look
+# very good. :D )
+set confirm off
+# Create a history file and enable it
+#set history filename ~/.gdbhistory
+#set history save on
+# Allow access to all memory
+set mem inaccessible-by-default off
+# Print the Black Magic Probe firmware version
+monitor version
+# Optional: Enable target power (It checks the target voltage and does not turn
+# power on if the target is already powered)
+monitor tpwr enable
+# Optional: Enable system Reset on connect
+#monitor connect_rst enable
+
+# Scan for targets using SWD protocol
+#monitor jtag_scan
+monitor swd_scan
+# Attach to the first device found
+attach 1
+# Erase full memory
+mon erase_mass
+# Erase and load the provided binary to flash
+load
+# Compare the loaded sections to the ones in the provided binary
+compare-sections
+# Run the application
+#run
+# Let things run for a sec
+#shell sleep 1
+# Reset and disconnect from the target
+kill
+# Turn off target power
+#monitor tpwr disable

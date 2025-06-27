@@ -1,0 +1,25 @@
+#![no_std]
+#![no_main]
+
+use cortex_m_rt::entry;
+use defmt::*;
+use embassy_stm32::gpio::{Input, Level, Output, Pull, Speed};
+use {defmt_rtt as _, panic_probe as _};
+
+#[entry]
+fn main() -> ! {
+    info!("Hello World!");
+
+    let p = embassy_stm32::init(Default::default());
+
+    let button_usr = Input::new(p.PA10, Pull::Up);
+    let button_aux = Input::new(p.PC14, Pull::Up);
+    let mut led_o = Output::new(p.PB1, Level::High, Speed::Low);
+    let mut led_y = Output::new(p.PB0, Level::High, Speed::Low);
+
+    loop {
+        info!("usr {} aux {}", if button_usr.is_high() { "high" } else { "low" }, if button_aux.is_high() { "high" } else { "low" } );
+        led_o.set_level(if button_usr.is_high() { Level::High } else { Level::Low });
+        led_y.set_level(if button_aux.is_high() { Level::High } else { Level::Low });
+    }
+}

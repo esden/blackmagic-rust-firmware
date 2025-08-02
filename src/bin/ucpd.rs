@@ -3,7 +3,7 @@
 
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::{bind_interrupts, peripherals, ucpd::{self, Ucpd}};
+use embassy_stm32::{bind_interrupts, gpio::{Level, Output, Speed}, peripherals, ucpd::{self, Ucpd}};
 use embassy_time::Timer;
 use {defmt_rtt as _, embassy_stm32 as _, panic_probe as _};
 
@@ -48,11 +48,31 @@ async fn main(_spawner: Spawner) -> ! {
     let mut ucpd = Ucpd::new(p.UCPD1, Irqs, p.PA15, p.PB15, Default::default());
     ucpd.cc_phy().set_pull(ucpd::CcPull::Sink);
 
+    let mut led_r = Output::new(p.PB2, Level::High, Speed::Low);
+    let mut led_o = Output::new(p.PB1, Level::High, Speed::Low);
+    let (_cc1, _cc2) = ucpd.cc_phy().vstate(); // We need to read the value twice to get the actual reading
+    let (cc1, cc2) = ucpd.cc_phy().vstate();
+
+    if cc1 != ucpd::CcVState::LOWEST {
+        led_r.set_low();
+    }
+
+    if cc2 != ucpd::CcVState::LOWEST {
+        led_o.set_low();
+    }
+
     info!("Hello World!");
 
     loop {
         let (cc1, cc2) = ucpd.cc_phy().vstate();
         info!("CC1 {} CC2 {}", cc_state_str(cc1), cc_state_str(cc2));
+        if cc1 != ucpd::CcVState::LOWEST {
+            led_r.set_low();
+        }
+
+        if cc2 != ucpd::CcVState::LOWEST {
+            led_o.set_low();
+        }
         Timer::after_secs(1).await;
     }
 }

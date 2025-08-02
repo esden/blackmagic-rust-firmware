@@ -22,7 +22,6 @@ fn cc_state_str(state: ucpd::CcVState) -> &'static str {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    info!("Hello World!");
 
     let p = {
         use embassy_stm32::rcc::*;
@@ -47,6 +46,8 @@ async fn main(_spawner: Spawner) -> ! {
 
     let mut ucpd = Ucpd::new(p.UCPD1, Irqs, p.PA15, p.PB15, Default::default());
     ucpd.cc_phy().set_pull(ucpd::CcPull::Sink);
+
+    info!("Hello World!");
 
     loop {
         let (cc1, cc2) = ucpd.cc_phy().vstate();

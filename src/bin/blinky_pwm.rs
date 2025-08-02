@@ -12,9 +12,9 @@ async fn main(_spawner: Spawner) -> ! {
     let p = embassy_stm32::init(Default::default());
     info!("Hello World!");
 
-    let led_y_pwm_pin = ComplementaryPwmPin::new_ch2(p.PB0, OutputType::PushPull);
-    let led_o_pwm_pin = ComplementaryPwmPin::new_ch3(p.PB1, OutputType::PushPull);
-    let led_r_pwm_pin = ComplementaryPwmPin::new_ch4(p.PB2, OutputType::PushPull);
+    let led_y_pwm_pin = ComplementaryPwmPin::new(p.PB0, OutputType::PushPull);
+    let led_o_pwm_pin = ComplementaryPwmPin::new(p.PB1, OutputType::PushPull);
+    let led_r_pwm_pin = ComplementaryPwmPin::new(p.PB2, OutputType::PushPull);
     let mut pwm = ComplementaryPwm::new(p.TIM8, None, None, None, Some(led_y_pwm_pin), None, Some(led_o_pwm_pin), None, Some(led_r_pwm_pin), khz(10), Default::default());
 
     pwm.set_duty(Channel::Ch2, pwm.get_max_duty());

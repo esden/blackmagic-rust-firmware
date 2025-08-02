@@ -38,3 +38,12 @@ incremental = false
 lto = 'fat'
 opt-level = "s"
 overflow-checks = false # <-
+
+# When fixing things inside embassy it is useful to use the local checked out version sometimes ;)
+# [patch."https://github.com/embassy-rs/embassy.git"]
+# embassy-stm32 = { path = "../../rust/embassy-git/embassy-stm32" }
+# embassy-sync = { path = "../../rust/embassy-git/embassy-sync" }
+# embassy-executor = { path = "../../rust/embassy-git/embassy-executor" }
+# embassy-time = { path = "../../rust/embassy-git/embassy-time" }
+# embassy-usb = { path = "../../rust/embassy-git/embassy-usb" }
+# embassy-futures = { path = "../../rust/embassy-git/embassy-futures" }

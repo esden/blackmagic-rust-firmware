@@ -40,6 +40,7 @@ async fn main(_spawner: Spawner) -> ! {
         config.rcc.voltage_range = VoltageScale::RANGE1;
         config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true }); // needed for USB
         config.rcc.mux.iclksel = mux::Iclksel::HSI48; // USB uses ICLK
+        config.enable_ucpd1_dead_battery = true;
 
         embassy_stm32::init(config)
     };

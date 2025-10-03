@@ -1,12 +1,13 @@
 #![no_std]
 #![no_main]
 
+use blackmagic_rust_firmware::{split_resources, system::{self, AssignedResources, LedResources, UsbResources}};
 use defmt::{panic, *};
 use defmt_rtt as _; // global logger
 use embassy_executor::Spawner;
 use embassy_futures::join::join;
 use embassy_stm32::usb::{Driver, Instance};
-use embassy_stm32::{bind_interrupts, peripherals, usb, Config};
+use embassy_stm32::{bind_interrupts, peripherals, usb};
 use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
 use embassy_usb::driver::EndpointError;
 use embassy_usb::Builder;
@@ -20,26 +21,10 @@ bind_interrupts!(struct Irqs {
 async fn main(_spawner: Spawner) {
     info!("Hello World!");
 
-    let mut config = Config::default();
-    {
-        use embassy_stm32::rcc::*;
-        config.rcc.hsi = true;
-        config.rcc.pll1 = Some(Pll {
-            source: PllSource::HSI, // 16 MHz
-            prediv: PllPreDiv::DIV1,
-            mul: PllMul::MUL10,
-            divp: None,
-            divq: None,
-            divr: Some(PllDiv::DIV1), // 160 MHz
-        });
-        config.rcc.sys = Sysclk::PLL1_R;
-        config.rcc.voltage_range = VoltageScale::RANGE1;
-        config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true }); // needed for USB
-        config.rcc.mux.iclksel = mux::Iclksel::HSI48; // USB uses ICLK
-    }
+    let p = system::init();
+    let r = split_resources!(p);
 
-    let p = embassy_stm32::init(config);
-
+    let usb_resources = r.usb;
     // Create the driver, from the HAL.
     let mut ep_out_buffer = [0u8; 256];
     let mut config = embassy_stm32::usb::Config::default();
@@ -48,7 +33,7 @@ async fn main(_spawner: Spawner) {
     // to enable vbus_detection to comply with the USB spec. If you enable it, the board
     // has to support it or USB won't work at all. See docs on `vbus_detection` for details.
     config.vbus_detection = false;
-    let driver = Driver::new_fs(p.USB_OTG_FS, Irqs, p.PA12, p.PA11, &mut ep_out_buffer, config);
+    let driver = Driver::new_fs( usb_resources.peri, Irqs, usb_resources.dp, usb_resources.dm, &mut ep_out_buffer, config);
 
     // Create embassy-usb Config
     let mut config = embassy_usb::Config::new(0xc0de, 0xcafe);

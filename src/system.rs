@@ -1,5 +1,10 @@
 use assign_resources::assign_resources;
-use embassy_stm32::{gpio::{self, Flex, Output}, peripherals, time::Hertz, timer::{low_level::OutputPolarity, simple_pwm::{PwmPin, SimplePwm, SimplePwmChannel}}, Peri};
+use embassy_stm32::{
+    bind_interrupts,
+    gpio::{self, Flex, Output},
+    peripherals, time::Hertz,
+    timer::{low_level::OutputPolarity, simple_pwm::{PwmPin, SimplePwm, SimplePwmChannel}},
+    usb::{self, Driver}, Config, Peri, Peripherals};
 
 assign_resources! {
     leds: LedResources {
@@ -10,6 +15,33 @@ assign_resources! {
         led_r: PA10,
         led_g: PA8,
     }
+    usb: UsbResources {
+        peri: USB_OTG_FS = UsbPeri,
+        dp: PA12,
+        dm: PA11,
+    }
+}
+
+pub fn init() -> Peripherals {
+    let mut config = Config::default();
+    {
+        use embassy_stm32::rcc::*;
+        config.rcc.hsi = true;
+        config.rcc.pll1 = Some(Pll {
+            source: PllSource::HSI, // 16 MHz
+            prediv: PllPreDiv::DIV1,
+            mul: PllMul::MUL10,
+            divp: None,
+            divq: None,
+            divr: Some(PllDiv::DIV1), // 160 MHz
+        });
+        config.rcc.sys = Sysclk::PLL1_R;
+        config.rcc.voltage_range = VoltageScale::RANGE1;
+        config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true }); // needed for USB
+        config.rcc.mux.iclksel = mux::Iclksel::HSI48; // USB uses ICLK
+    }
+
+    embassy_stm32::init(config)
 }
 
 pub fn get_leds<'a>(r: LedResources) -> (Output<'a>, Output<'a>, Output<'a>, Flex<'a>) {

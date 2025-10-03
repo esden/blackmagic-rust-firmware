@@ -1,10 +1,10 @@
 use assign_resources::assign_resources;
 use embassy_stm32::{
-    bind_interrupts,
-    gpio::{self, Flex, Output},
+    bind_interrupts, exti::ExtiInput,
+    gpio::{self, Flex, Input, Output},
     peripherals, time::Hertz,
     timer::{low_level::OutputPolarity, simple_pwm::{PwmPin, SimplePwm, SimplePwmChannel}},
-    usb::{self, Driver}, Config, Peri, Peripherals};
+    usart, Config, Peri, Peripherals};
 
 assign_resources! {
     leds: LedResources {
@@ -15,12 +15,20 @@ assign_resources! {
         led_r: PA10,
         led_g: PA8,
     }
+    button: ButtonResources {
+        pin: PA15,
+        exti: EXTI15,
+    }
     usb: UsbResources {
         peri: USB_OTG_FS = UsbPeri,
         dp: PA12,
         dm: PA11,
     }
 }
+
+bind_interrupts!(struct Irqs {
+    UART4 => usart::InterruptHandler<peripherals::UART4>;
+});
 
 pub fn init() -> Peripherals {
     let mut config = Config::default();
@@ -100,4 +108,12 @@ pub fn get_leds_pwm<'a>(r: LedResources) -> (SimplePwmChannel<'a, peripherals::T
     pwm_r.enable();
 
     (pwm_y, pwm_o, pwm_r, pwm_g)
+}
+
+pub fn get_button<'a>(r: ButtonResources) -> Input<'a> {
+    Input::new(r.pin, gpio::Pull::None)
+}
+
+pub fn get_button_exti<'a>(r: ButtonResources) -> ExtiInput<'a> {
+    ExtiInput::new(r.pin, r.exti, gpio::Pull::None)
 }

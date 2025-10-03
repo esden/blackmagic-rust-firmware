@@ -1,9 +1,9 @@
 #![no_std]
 #![no_main]
 
+use blackmagic_rust_firmware::{split_resources, system::{self, AssignedResources, LedResources}};
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::{gpio::OutputType, time::khz, timer::{complementary_pwm::{ComplementaryPwm, ComplementaryPwmPin}, Channel}};
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -11,28 +11,32 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(_spawner: Spawner) -> ! {
     let p = embassy_stm32::init(Default::default());
     info!("Hello World!");
+    let r = split_resources!(p);
 
-    let led_y_pwm_pin = ComplementaryPwmPin::new(p.PB0, OutputType::PushPull);
-    let led_o_pwm_pin = ComplementaryPwmPin::new(p.PB1, OutputType::PushPull);
-    let led_r_pwm_pin = ComplementaryPwmPin::new(p.PB2, OutputType::PushPull);
-    let mut pwm = ComplementaryPwm::new(p.TIM8, None, None, None, Some(led_y_pwm_pin), None, Some(led_o_pwm_pin), None, Some(led_r_pwm_pin), khz(10), Default::default());
+    let (mut led_y, mut led_o, mut led_r, mut led_g) = system::get_leds_pwm(r.leds);
 
-    pwm.set_duty(Channel::Ch2, pwm.get_max_duty());
-    pwm.set_duty(Channel::Ch3, pwm.get_max_duty());
-    pwm.set_duty(Channel::Ch4, pwm.get_max_duty());
-    pwm.enable(Channel::Ch2);
-    pwm.enable(Channel::Ch3);
-    pwm.enable(Channel::Ch4);
-
-    let mut duty = pwm.get_max_duty();
+    let mut duty = led_y.max_duty_cycle();
+    let mut dir = -1;
+    info!("Max duty {}", duty);
     loop {
-        pwm.set_duty(Channel::Ch2, duty);
-        pwm.set_duty(Channel::Ch3, duty);
-        pwm.set_duty(Channel::Ch4, duty);
-        if duty < 2 {
-            duty = pwm.get_max_duty();
+        led_y.set_duty_cycle(duty);
+        led_o.set_duty_cycle(duty);
+        led_r.set_duty_cycle(duty);
+        led_g.set_duty_cycle(duty);
+        if duty == 0 {
+            info!("Reverse to up ...");
+            dir = 1;
+            duty += 1;
+        } else if duty == led_y.max_duty_cycle() {
+            info!("Reverse to down ...");
+            dir = -1;
+            duty -= 1;
         } else {
-            duty -= 2;
+            if dir == -1 {
+                duty -= 1;
+            } else {
+                duty += 1;
+            }
         }
         Timer::after_millis(10).await;
     }

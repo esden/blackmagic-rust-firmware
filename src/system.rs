@@ -1,5 +1,5 @@
 use assign_resources::assign_resources;
-use embassy_stm32::{gpio::{self, Output, Flex}, peripherals, Peri};
+use embassy_stm32::{gpio::{self, Flex, Output}, peripherals, time::Hertz, timer::{low_level::OutputPolarity, simple_pwm::{PwmPin, SimplePwm, SimplePwmChannel}}, Peri};
 
 assign_resources! {
     leds: LedResources {
@@ -24,4 +24,48 @@ pub fn get_leds<'a>(r: LedResources) -> (Output<'a>, Output<'a>, Output<'a>, Fle
         led_r,
         led_g
     )
+}
+
+pub fn get_leds_pwm<'a>(r: LedResources) -> (SimplePwmChannel<'a, peripherals::TIM3>, SimplePwmChannel<'a, peripherals::TIM3>, SimplePwmChannel<'a, peripherals::TIM1>, SimplePwmChannel<'a, peripherals::TIM1>) {
+    let pwm_pin_o = PwmPin::new(r.led_o, gpio::OutputType::PushPull);
+    let pwm_pin_y = PwmPin::new(r.led_y, gpio::OutputType::PushPull);
+    let pwm_yo = SimplePwm::new(
+        r.led_yo_tim,
+        Some(pwm_pin_o),
+        Some(pwm_pin_y),
+        None,
+        None,
+        Hertz::khz(10),
+        Default::default());
+    let pwm_channels_yo = pwm_yo.split();
+    let mut pwm_o = pwm_channels_yo.ch1;
+    pwm_o.set_duty_cycle_fully_on();
+    pwm_o.set_polarity(OutputPolarity::ActiveLow);
+    pwm_o.enable();
+    let mut pwm_y = pwm_channels_yo.ch2;
+    pwm_y.set_duty_cycle_fully_on();
+    pwm_y.set_polarity(OutputPolarity::ActiveLow);
+    pwm_y.enable();
+
+    let pwm_pin_g = PwmPin::new(r.led_g, gpio::OutputType::PushPull);
+    let pwm_pin_r = PwmPin::new(r.led_r, gpio::OutputType::PushPull);
+    let pwm_rg = SimplePwm::new(
+        r.led_rg_tim,
+        Some(pwm_pin_g),
+        None,
+        Some(pwm_pin_r),
+        None,
+        Hertz::khz(10),
+        Default::default());
+    let pwm_channels_rg = pwm_rg.split();
+    let mut pwm_g = pwm_channels_rg.ch1;
+    pwm_g.set_duty_cycle_fully_on();
+    pwm_g.set_polarity(OutputPolarity::ActiveLow);
+    pwm_g.enable();
+    let mut pwm_r = pwm_channels_rg.ch3;
+    pwm_r.set_duty_cycle_fully_on();
+    pwm_r.set_polarity(OutputPolarity::ActiveLow);
+    pwm_r.enable();
+
+    (pwm_y, pwm_o, pwm_r, pwm_g)
 }

@@ -26,6 +26,12 @@ assign_resources! {
     }
 }
 
+pub mod preamble {
+    // pub use crate::split_resources;
+    pub use crate::system;
+    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources};
+}
+
 bind_interrupts!(struct Irqs {
     UART4 => usart::InterruptHandler<peripherals::UART4>;
 });

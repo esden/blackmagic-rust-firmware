@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use blackmagic_rust_firmware::{split_resources, system::{self, AssignedResources, LedResources, ButtonResources, UsbResources}};
+use blackmagic_rust_firmware::{split_resources, system::preamble::*};
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_stm32::gpio;

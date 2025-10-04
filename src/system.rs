@@ -2,9 +2,9 @@ use assign_resources::assign_resources;
 use embassy_stm32::{
     bind_interrupts, exti::ExtiInput,
     gpio::{self, Flex, Input, Output},
-    peripherals, time::Hertz,
+    mode, peripherals, time::Hertz,
     timer::{low_level::OutputPolarity, simple_pwm::{PwmPin, SimplePwm, SimplePwmChannel}},
-    usart, Config, Peri, Peripherals};
+    usart::{self, Uart}, Config, Peri, Peripherals};
 
 assign_resources! {
     leds: LedResources {
@@ -24,16 +24,21 @@ assign_resources! {
         dp: PA12,
         dm: PA11,
     }
+    usart_primary: UartPrimaryResources {
+        peri: USART2 = UartPrimaryPeri,
+        rx_pin: PA3,
+        tx_pin: PA2,
+    }
 }
 
 pub mod preamble {
     // pub use crate::split_resources;
     pub use crate::system;
-    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources};
+    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources, UartPrimaryResources};
 }
 
-bind_interrupts!(struct Irqs {
-    UART4 => usart::InterruptHandler<peripherals::UART4>;
+bind_interrupts!(struct UartIrqs {
+    USART2 => usart::InterruptHandler<peripherals::USART2>;
 });
 
 pub fn init() -> Peripherals {
@@ -122,4 +127,9 @@ pub fn get_button<'a>(r: ButtonResources) -> Input<'a> {
 
 pub fn get_button_exti<'a>(r: ButtonResources) -> ExtiInput<'a> {
     ExtiInput::new(r.pin, r.exti, gpio::Pull::None)
+}
+
+pub fn get_uart_primary_blocking<'a>(r: UartPrimaryResources) -> Uart<'a, mode::Blocking> {
+    let config = usart::Config::default();
+    Uart::new_blocking(r.peri, r.rx_pin, r.tx_pin, config).unwrap()
 }

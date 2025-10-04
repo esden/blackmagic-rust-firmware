@@ -28,6 +28,8 @@ assign_resources! {
         peri: USART2 = UartPrimaryPeri,
         rx_pin: PA3,
         tx_pin: PA2,
+        rx_dma: GPDMA1_CH1,
+        tx_dma: GPDMA1_CH0
     }
 }
 
@@ -132,4 +134,9 @@ pub fn get_button_exti<'a>(r: ButtonResources) -> ExtiInput<'a> {
 pub fn get_uart_primary_blocking<'a>(r: UartPrimaryResources) -> Uart<'a, mode::Blocking> {
     let config = usart::Config::default();
     Uart::new_blocking(r.peri, r.rx_pin, r.tx_pin, config).unwrap()
+}
+
+pub fn get_uart_primary<'a>(r: UartPrimaryResources) -> Uart<'a, mode::Async> {
+    let config = usart::Config::default();
+    Uart::new(r.peri, r.rx_pin, r.tx_pin, UartIrqs, r.tx_dma, r.rx_dma, config).unwrap()
 }

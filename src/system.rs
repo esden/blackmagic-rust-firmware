@@ -24,12 +24,12 @@ assign_resources! {
         dp: PA12,
         dm: PA11,
     }
-    usart_primary: UartPrimaryResources {
+    uart_primary: UartPrimaryResources {
         peri: USART2 = UartPrimaryPeri,
         rx_pin: PA3,
         tx_pin: PA2,
         rx_dma: GPDMA1_CH1,
-        tx_dma: GPDMA1_CH0
+        tx_dma: GPDMA1_CH0,
     }
 }
 

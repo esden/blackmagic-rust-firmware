@@ -24,16 +24,16 @@ fn main() -> ! {
     //     Output::new(p.PA5, Level::High, Speed::Low)
     // };
 
-    let mut usart = system::get_uart_primary_blocking(r.usart_primary);
+    let mut uart = system::get_uart_primary_blocking(r.uart_primary);
 
-    usart.blocking_write(b"Hello Embassy World!\r\n").unwrap();
+    uart.blocking_write(b"Hello Embassy World!\r\n").unwrap();
     info!("wrote Hello, starting echo");
 
     let mut buf = [0u8; 1];
     loop {
-        match usart.blocking_read(&mut buf) {
+        match uart.blocking_read(&mut buf) {
             Ok(()) => {
-                usart.blocking_write(&buf).unwrap();
+                uart.blocking_write(&buf).unwrap();
                 led_y.toggle();
             },
             Err(e) => error!("read failed with \"{}\"", e),

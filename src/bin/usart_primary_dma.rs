@@ -27,14 +27,14 @@ async fn main(_spawner: Spawner) {
     //     Output::new(p.PA5, Level::High, Speed::Low)
     // };
 
-    let mut usart = system::get_uart_primary(r.usart_primary);
+    let mut uart = system::get_uart_primary(r.uart_primary);
 
     for n in 0u32.. {
         let mut s: String<128> = String::new();
         core::write!(&mut s, "Hello DMA World {}!\r\n", n).unwrap();
 
         info!("Writing...");
-        usart.write(s.as_bytes()).await.ok();
+        uart.write(s.as_bytes()).await.ok();
 
         info!("wrote DMA");
     }

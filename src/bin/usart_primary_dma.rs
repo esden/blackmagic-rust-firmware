@@ -6,13 +6,8 @@ use core::fmt::Write;
 use blackmagic_rust_firmware::{split_resources, system::preamble::*};
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::{bind_interrupts, peripherals, usart};
 use heapless::String;
 use {defmt_rtt as _, panic_probe as _};
-
-bind_interrupts!(struct Irqs {
-    UART4 => usart::InterruptHandler<peripherals::UART4>;
-});
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {

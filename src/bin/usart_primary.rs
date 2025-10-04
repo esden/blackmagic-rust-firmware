@@ -3,12 +3,7 @@
 
 use blackmagic_rust_firmware::{split_resources, system::preamble::*};
 use defmt::*;
-use embassy_stm32::{bind_interrupts, peripherals, usart};
 use {defmt_rtt as _, panic_probe as _};
-
-bind_interrupts!(struct Irqs {
-    UART4 => usart::InterruptHandler<peripherals::UART4>;
-});
 
 #[cortex_m_rt::entry]
 fn main() -> ! {

@@ -31,15 +31,24 @@ assign_resources! {
         rx_dma: GPDMA1_CH1,
         tx_dma: GPDMA1_CH0,
     }
+    uart_secondary: UartSecondaryResources {
+        peri: USART1 = UartSecondaryPeri,
+        rx_pin: PB7,
+        tx_pin: PB6,
+        rx_dma: GPDMA1_CH2,
+        tx_dma: GPDMA1_CH3,
+        dir_pin: PC13,
+    }
 }
 
 pub mod preamble {
     // pub use crate::split_resources;
     pub use crate::system;
-    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources, UartPrimaryResources};
+    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources, UartPrimaryResources, UartSecondaryResources};
 }
 
 bind_interrupts!(struct UartIrqs {
+    USART1 => usart::InterruptHandler<peripherals::USART1>;
     USART2 => usart::InterruptHandler<peripherals::USART2>;
 });
 
@@ -139,4 +148,13 @@ pub fn get_uart_primary_blocking<'a>(r: UartPrimaryResources) -> Uart<'a, mode::
 pub fn get_uart_primary<'a>(r: UartPrimaryResources) -> Uart<'a, mode::Async> {
     let config = usart::Config::default();
     Uart::new(r.peri, r.rx_pin, r.tx_pin, UartIrqs, r.tx_dma, r.rx_dma, config).unwrap()
+}
+
+pub fn get_uart_secondary_blocking<'a>(r: UartSecondaryResources, swap_rx_tx: bool) -> (Uart<'a, mode::Blocking>, Output<'a>) {
+    let mut config = usart::Config::default();
+    config. swap_rx_tx = swap_rx_tx;
+    (
+        Uart::new_blocking(r.peri, r.rx_pin, r.tx_pin, config).unwrap(),
+        Output::new(r.dir_pin, if swap_rx_tx { gpio::Level::Low } else { gpio::Level::High }, gpio::Speed::Low)
+    )
 }

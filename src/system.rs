@@ -29,6 +29,7 @@ assign_resources! {
         tpwr_en_pin: PA5,
         tpwr_sens_peri: ADC1,
         tpwr_sens_pin: PB2,
+        tpwr_sens_dma: GPDMA1_CH5 = TpwrSensDma,
     }
     uart_primary: UartPrimaryResources {
         peri: USART2 = UartPrimaryPeri,
@@ -156,7 +157,7 @@ pub fn get_button_exti<'a>(r: ButtonResources) -> ExtiInput<'a> {
     ExtiInput::new(r.pin, r.exti, gpio::Pull::None)
 }
 
-pub fn get_tpwr<'a>(r: TpwrResources) -> (Output<'a>, Adc<'a, peripherals::ADC1>, AnyAdcChannel<peripherals::ADC1>)
+pub fn get_tpwr<'a>(r: TpwrResources) -> (Output<'a>, Adc<'a, peripherals::ADC1>, AnyAdcChannel<peripherals::ADC1>, TpwrSensDma)
 {
     let tpwr_en = Output::new(r.tpwr_en_pin, gpio::Level::Low, gpio::Speed::Low);
     let mut adc = Adc::new(r.tpwr_sens_peri);
@@ -165,7 +166,7 @@ pub fn get_tpwr<'a>(r: TpwrResources) -> (Output<'a>, Adc<'a, peripherals::ADC1>
     adc.set_sample_time(adc::SampleTime::CYCLES160_5);
     let tpwr_sens_channel = r.tpwr_sens_pin.degrade_adc();
 
-    (tpwr_en, adc, tpwr_sens_channel)
+    (tpwr_en, adc, tpwr_sens_channel, r.tpwr_sens_dma)
 }
 
 pub fn get_uart_primary_blocking<'a>(r: UartPrimaryResources) -> Uart<'a, mode::Blocking> {

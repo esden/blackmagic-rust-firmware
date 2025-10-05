@@ -27,7 +27,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let (mut led_y, _, _, _) = system::get_leds(r.leds);
 
     // TPWR
-    let (mut tpwr_en, mut tpwr_sens, mut tpwr_sens_ch) = system::get_tpwr(r.tpwr);
+    let (mut tpwr_en, mut tpwr_sens, mut tpwr_sens_ch, _tpwr_sens_dac) = system::get_tpwr(r.tpwr);
 
     let mut cnt = 10;
     loop {

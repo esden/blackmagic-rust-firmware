@@ -1,10 +1,9 @@
 #![no_std]
 #![no_main]
 
+use blackmagic_rust_firmware::{split_resources, system::preamble::*};
 use defmt::*;
-use embassy_stm32::gpio::{Output, Speed};
-use embassy_stm32::{adc, gpio::Level};
-use embassy_stm32::adc::AdcChannel;
+use embassy_stm32::adc;
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -21,52 +20,37 @@ fn calc_voltage(adc_val: u16) -> f32 {
 
 #[embassy_executor::main]
 async fn main(_spawner: embassy_executor::Spawner) {
-    let config = embassy_stm32::Config::default();
-
-    let mut p = embassy_stm32::init(config);
+    let p = system::init();
+    let r = split_resources!(p);
 
     // LED
-    let mut led_o = Output::new(p.PB1, Level::High, Speed::Low);
+    let (mut led_y, _, _, _) = system::get_leds(r.leds);
 
     // TPWR
-    let mut tpwr_en = Output::new(p.PB12, Level::Low, Speed::Low);
+    let (mut tpwr_en, mut tpwr_sens, mut tpwr_sens_ch, mut tpwr_sens_dma) = system::get_tpwr(r.tpwr);
 
-    // **** ADC1 init ****
-    let mut adc1 = adc::Adc::new(p.ADC1);
-    let adc1_pin1 = p.PA3; // ADC IN8
-    let adc1_pin2 = p.PA2; // ADC IN7
-    adc1.set_resolution(adc::Resolution::BITS14);
-    adc1.set_averaging(adc::Averaging::Samples1024);
-    adc1.set_sample_time(adc::SampleTime::CYCLES160_5);
-
-
-    // **** ADC1 async read ****
-    let mut degraded11 = adc1_pin1.degrade_adc();
-    let mut degraded12 = adc1_pin2.degrade_adc();
-    let mut measurements = [0u16; 2];
+    let mut measurements = [0u16; 1];
 
     let mut cnt = 10;
     loop {
         let tim = Timer::after_millis(10);
-        adc1.read(
-            p.GPDMA1_CH0.reborrow(),
+        tpwr_sens.read(
+            tpwr_sens_dma.reborrow(),
             [
-                (&mut degraded11, adc::SampleTime::CYCLES160_5),
-                (&mut degraded12, adc::SampleTime::CYCLES160_5),
+                (&mut tpwr_sens_ch, adc::SampleTime::CYCLES160_5),
             ]
             .into_iter(),
             &mut measurements,
         )
         .await;
-        let volt1: f32 = calc_voltage(measurements[0]);
-        let volt2: f32 = calc_voltage(measurements[1]);
+        let volt: f32 = calc_voltage(measurements[0]);
 
-        info!("Read {} {}", volt1, volt2);
+        info!("Read {} {}",measurements[0], volt);
 
         if cnt == 0 {
             cnt = 10;
             tpwr_en.toggle();
-            led_o.toggle();
+            led_y.toggle();
         } else {
             cnt -= 1;
         }

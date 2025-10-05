@@ -158,3 +158,12 @@ pub fn get_uart_secondary_blocking<'a>(r: UartSecondaryResources, swap_rx_tx: bo
         Output::new(r.dir_pin, if swap_rx_tx { gpio::Level::Low } else { gpio::Level::High }, gpio::Speed::Low)
     )
 }
+
+pub fn get_uart_secondary<'a>(r: UartSecondaryResources, swap_rx_tx: bool) -> (Uart<'a, mode::Async>, Output<'a>) {
+    let mut config = usart::Config::default();
+    config. swap_rx_tx = swap_rx_tx;
+    (
+        Uart::new(r.peri, r.rx_pin, r.tx_pin, UartIrqs, r.tx_dma, r.rx_dma, config).unwrap(),
+        Output::new(r.dir_pin, if swap_rx_tx { gpio::Level::Low } else { gpio::Level::High }, gpio::Speed::Low)
+    )
+}

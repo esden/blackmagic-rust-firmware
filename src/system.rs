@@ -74,17 +74,17 @@ pub fn init() -> Peripherals {
         });
         config.rcc.pll2 = Some(Pll {
             source: PllSource::HSI, // 16 MHz
-            prediv: PllPreDiv::DIV1,
-            mul: PllMul::MUL10,
+            prediv: PllPreDiv::DIV4, // 4 MHz
+            mul: PllMul::MUL55, // 220 MHz
             divp: None,
             divq: None,
-            divr: Some(PllDiv::DIV2), // 160 MHz
+            divr: Some(PllDiv::DIV4), // 55 MHz
         });
         config.rcc.sys = Sysclk::PLL1_R;
         config.rcc.voltage_range = VoltageScale::RANGE1;
         config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true }); // needed for USB
         config.rcc.mux.iclksel = mux::Iclksel::HSI48; // USB uses ICLK
-        config.rcc.mux.adcdacsel = mux::Adcdacsel::PLL2_R; // According to the RM we need about 50% clock ratio for the ADC
+        config.rcc.mux.adcdacsel = mux::Adcdacsel::PLL2_R; // Maximum ADC clock is 55 MHz
     }
 
     embassy_stm32::init(config)

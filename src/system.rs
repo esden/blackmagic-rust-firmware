@@ -1,5 +1,6 @@
 use assign_resources::assign_resources;
 use embassy_stm32::{
+    adc::{self, Adc, AdcChannel, AnyAdcChannel},
     bind_interrupts, exti::ExtiInput,
     gpio::{self, Flex, Input, Output},
     mode, peripherals, time::Hertz,
@@ -24,6 +25,11 @@ assign_resources! {
         dp: PA12,
         dm: PA11,
     }
+    tpwr: TpwrResources {
+        tpwr_en_pin: PA5,
+        tpwr_sens_peri: ADC1,
+        tpwr_sens_pin: PB2,
+    }
     uart_primary: UartPrimaryResources {
         peri: USART2 = UartPrimaryPeri,
         rx_pin: PA3,
@@ -44,7 +50,8 @@ assign_resources! {
 pub mod preamble {
     // pub use crate::split_resources;
     pub use crate::system;
-    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources, UartPrimaryResources, UartSecondaryResources};
+    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources, TpwrResources,
+        UartPrimaryResources, UartSecondaryResources};
 }
 
 bind_interrupts!(struct UartIrqs {
@@ -65,10 +72,19 @@ pub fn init() -> Peripherals {
             divq: None,
             divr: Some(PllDiv::DIV1), // 160 MHz
         });
+        config.rcc.pll2 = Some(Pll {
+            source: PllSource::HSI, // 16 MHz
+            prediv: PllPreDiv::DIV1,
+            mul: PllMul::MUL10,
+            divp: None,
+            divq: None,
+            divr: Some(PllDiv::DIV2), // 160 MHz
+        });
         config.rcc.sys = Sysclk::PLL1_R;
         config.rcc.voltage_range = VoltageScale::RANGE1;
         config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true }); // needed for USB
         config.rcc.mux.iclksel = mux::Iclksel::HSI48; // USB uses ICLK
+        config.rcc.mux.adcdacsel = mux::Adcdacsel::PLL2_R; // According to the RM we need about 50% clock ratio for the ADC
     }
 
     embassy_stm32::init(config)
@@ -138,6 +154,18 @@ pub fn get_button<'a>(r: ButtonResources) -> Input<'a> {
 
 pub fn get_button_exti<'a>(r: ButtonResources) -> ExtiInput<'a> {
     ExtiInput::new(r.pin, r.exti, gpio::Pull::None)
+}
+
+pub fn get_tpwr<'a>(r: TpwrResources) -> (Output<'a>, Adc<'a, peripherals::ADC1>, AnyAdcChannel<peripherals::ADC1>)
+{
+    let tpwr_en = Output::new(r.tpwr_en_pin, gpio::Level::Low, gpio::Speed::Low);
+    let mut adc = Adc::new(r.tpwr_sens_peri);
+    adc.set_resolution(adc::Resolution::BITS14);
+    adc.set_averaging(adc::Averaging::Samples1024);
+    adc.set_sample_time(adc::SampleTime::CYCLES160_5);
+    let tpwr_sens_channel = r.tpwr_sens_pin.degrade_adc();
+
+    (tpwr_en, adc, tpwr_sens_channel)
 }
 
 pub fn get_uart_primary_blocking<'a>(r: UartPrimaryResources) -> Uart<'a, mode::Blocking> {

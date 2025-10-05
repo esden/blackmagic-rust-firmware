@@ -1,9 +1,9 @@
 #![no_std]
 #![no_main]
 
+use blackmagic_rust_firmware::{split_resources, system::preamble::*};
 use defmt::*;
-use embassy_stm32::gpio::{Level, Speed};
-use embassy_stm32::{adc, gpio::Output};
+use embassy_stm32::adc;
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -20,39 +20,27 @@ fn calc_voltage(adc_val: u16) -> f32 {
 
 #[embassy_executor::main]
 async fn main(_spawner: embassy_executor::Spawner) {
-    let config = embassy_stm32::Config::default();
-
-    let p = embassy_stm32::init(config);
+    let p = system::init();
+    let r = split_resources!(p);
 
     // LED
-    let mut led_o = Output::new(p.PB1, Level::High, Speed::Low);
+    let (mut led_y, _, _, _) = system::get_leds(r.leds);
 
     // TPWR
-    let mut tpwr_en = Output::new(p.PB12, Level::Low, Speed::Low);
-
-    // **** ADC init ****
-    let mut adc1 = adc::Adc::new(p.ADC1);
-    let mut adc1_pin1 = p.PA3; // ADC IN8
-    let mut adc1_pin2 = p.PA2; // ADC IN7
-    adc1.set_resolution(adc::Resolution::BITS14);
-    adc1.set_averaging(adc::Averaging::Samples1024);
-    adc1.set_sample_time(adc::SampleTime::CYCLES160_5);
+    let (mut tpwr_en, mut tpwr_sens, mut tpwr_sens_ch) = system::get_tpwr(r.tpwr);
 
     let mut cnt = 10;
     loop {
-        let tim = Timer::after_millis(10);
-        let raw1: u16 = adc1.blocking_read(&mut adc1_pin1);
-        let volt1 = calc_voltage(raw1);
+        let tim = Timer::after_millis(100);
+        let raw: u16 = tpwr_sens.blocking_read(&mut tpwr_sens_ch);
+        let volt = calc_voltage(raw);
 
-        let raw2: u16 = adc1.blocking_read(&mut adc1_pin2);
-        let volt2 = calc_voltage(raw2);
-
-        info!("Read  {} {}", volt1, volt2);
+        info!("Read {} {}", raw, volt);
 
         if cnt == 0 {
             cnt = 10;
             tpwr_en.toggle();
-            led_o.toggle();
+            led_y.toggle();
         } else {
             cnt -= 1;
         }

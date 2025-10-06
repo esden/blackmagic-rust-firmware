@@ -10,7 +10,7 @@ use {defmt_rtt as _, panic_probe as _};
 
 #[entry]
 fn main() -> ! {
-    info!("Hello World, dude!");
+    info!("Hello World!");
 
     let p = embassy_stm32::init(Default::default());
 

@@ -1,11 +1,42 @@
 use assign_resources::assign_resources;
 use embassy_stm32::{
-    adc::{self, Adc, AdcChannel, AnyAdcChannel},
-    bind_interrupts, exti::ExtiInput,
-    gpio::{self, Flex, Input, Output},
-    mode, peripherals, time::Hertz,
-    timer::{low_level::OutputPolarity, simple_pwm::{PwmPin, SimplePwm, SimplePwmChannel}},
-    usart::{self, Uart}, Config, Peri, Peripherals};
+    adc::{
+        self,
+        Adc,
+        AdcChannel,
+        AnyAdcChannel
+    },
+    bind_interrupts,
+    exti::ExtiInput,
+    gpio::{
+        self,
+        Flex,
+        Input,
+        Output
+    },
+    mode,
+    ospi::{
+        self,
+        Ospi
+    },
+    peripherals,
+    time::Hertz,
+    timer::{
+        low_level::OutputPolarity,
+        simple_pwm::{
+            PwmPin,
+            SimplePwm,
+            SimplePwmChannel
+        }
+    },
+    usart::{
+        self,
+        Uart
+    },
+    Config,
+    Peri,
+    Peripherals
+};
 
 assign_resources! {
     leds: LedResources {
@@ -46,13 +77,22 @@ assign_resources! {
         tx_dma: GPDMA1_CH3,
         dir_pin: PC13,
     }
+    flash: FlashResources {
+        peri: OCTOSPI1 = FlashPeri,
+        nss_pin: PA4,
+        sck_pin: PB10,
+        d0_pin: PB1,
+        d1_pin: PB0,
+        d2_pin: PA7,
+        d3_pin: PA6,
+    }
 }
 
 pub mod preamble {
     // pub use crate::split_resources;
     pub use crate::system;
     pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources, TpwrResources,
-        UartPrimaryResources, UartSecondaryResources};
+        UartPrimaryResources, UartSecondaryResources, FlashResources};
 }
 
 bind_interrupts!(struct UartIrqs {
@@ -195,4 +235,18 @@ pub fn get_uart_secondary<'a>(r: UartSecondaryResources, swap_rx_tx: bool) -> (U
         Uart::new(r.peri, r.rx_pin, r.tx_pin, UartIrqs, r.tx_dma, r.rx_dma, config).unwrap(),
         Output::new(r.dir_pin, if swap_rx_tx { gpio::Level::Low } else { gpio::Level::High }, gpio::Speed::Low)
     )
+}
+
+pub fn get_flash_blocking<'a>(r: FlashResources) -> Ospi<'a, peripherals::OCTOSPI1, mode::Blocking> {
+    let mut config = ospi::Config::default();
+    config.clock_prescaler = 160; // AHB 160Mhz => SCK 1MHz
+    Ospi::new_blocking_quadspi(
+        r.peri,
+        r.sck_pin,
+        r.d0_pin,
+        r.d1_pin,
+        r.d2_pin,
+        r.d3_pin,
+        r.nss_pin,
+        config)
 }

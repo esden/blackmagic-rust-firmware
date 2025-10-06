@@ -79,12 +79,13 @@ assign_resources! {
     }
     flash: FlashResources {
         peri: OCTOSPI1 = FlashPeri,
-        nss_pin: PA4,
-        sck_pin: PB10,
-        d0_pin: PB1,
-        d1_pin: PB0,
-        d2_pin: PA7,
-        d3_pin: PA6,
+        nss: PA4,
+        sck: PB10,
+        d0: PB1,
+        d1: PB0,
+        d2: PA7,
+        d3: PA6,
+        dma: GPDMA1_CH6 = FlashDma,
     }
 }
 
@@ -242,11 +243,26 @@ pub fn get_flash_blocking<'a>(r: FlashResources) -> Ospi<'a, peripherals::OCTOSP
     config.clock_prescaler = 160; // AHB 160Mhz => SCK 1MHz
     Ospi::new_blocking_quadspi(
         r.peri,
-        r.sck_pin,
-        r.d0_pin,
-        r.d1_pin,
-        r.d2_pin,
-        r.d3_pin,
-        r.nss_pin,
+        r.sck,
+        r.d0,
+        r.d1,
+        r.d2,
+        r.d3,
+        r.nss,
+        config)
+}
+
+pub fn get_flash<'a>(r: FlashResources) -> Ospi<'a, peripherals::OCTOSPI1, mode::Async> {
+    let mut config = ospi::Config::default();
+    config.clock_prescaler = 160; // AHB 160Mhz => SCK 1MHz
+    Ospi::new_quadspi(
+        r.peri,
+        r.sck,
+        r.d0,
+        r.d1,
+        r.d2,
+        r.d3,
+        r.nss,
+        r.dma,
         config)
 }

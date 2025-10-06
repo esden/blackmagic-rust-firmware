@@ -27,13 +27,13 @@ fn main() -> ! {
         transfer_config.isize = ospi::AddressSize::_8Bit;
         transfer_config.dummy = ospi::DummyCycles::_24;
         transfer_config.dwidth = ospi::OspiWidth::SING;
-        flash.blocking_read(&mut buf, transfer_config).unwrap();
+        unwrap!(flash.blocking_read(&mut buf, transfer_config));
         info!("Device ID              {=u8:#x}", buf[0]);
 
         // Read Manufacturer and Device ID
         let mut buf = [0x00_u8; 2];
         transfer_config.instruction = Some(0x90);
-        flash.blocking_read(&mut buf, transfer_config).unwrap();
+        unwrap!(flash.blocking_read(&mut buf, transfer_config));
         info!("MFR & Device ID {=[u8]:#x}", buf);
 
         // Read JEDEC ID
@@ -43,7 +43,7 @@ fn main() -> ! {
         let mut buf = [0x0_u8; 3];
         transfer_config.instruction = Some(0x9F);
         transfer_config.dummy = ospi::DummyCycles::_0;
-        flash.blocking_read(&mut buf, transfer_config).unwrap();
+        unwrap!(flash.blocking_read(&mut buf, transfer_config));
         info!("JEDEC ID        {=[u8]:#x}", buf);
     }
 }

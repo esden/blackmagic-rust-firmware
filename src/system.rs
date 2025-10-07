@@ -104,6 +104,11 @@ assign_resources! {
         tms_dir: PC14,
         tms: PB12, // NSS
     }
+    rst: RstResources {
+        rst: PH1,
+        rst_sens: PH0,
+        rst_sens_ch: EXTI0,
+    }
 }
 
 pub mod preamble {
@@ -118,7 +123,8 @@ pub mod preamble {
         UartPrimaryResources,
         UartSecondaryResources,
         FlashResources,
-        JtagResources
+        JtagResources,
+        RstResources,
     };
 }
 
@@ -329,4 +335,11 @@ pub fn get_jtag_spi<'a>(r: JtagResources) -> (Output<'a>, Output<'a>, Output<'a>
     let spi = Spi::new(r.spi_peri, r.tck, r.tdi, r.tdo, r.spi_tx_dma, r.spi_rx_dma, config);
 
     (tckdo_en, cs_dir, cs, spi)
+}
+
+pub fn get_rst<'a>(r: RstResources) -> (Output<'a>, ExtiInput<'a>) {
+    let rst = Output::new(r.rst, gpio::Level::Low, gpio::Speed::Low);
+    let rst_sens = ExtiInput::new(r.rst_sens, r.rst_sens_ch, gpio::Pull::Up);
+
+    (rst, rst_sens)
 }

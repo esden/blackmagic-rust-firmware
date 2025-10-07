@@ -1,23 +1,23 @@
 #![no_std]
 #![no_main]
 
+use blackmagic_rust_firmware::{split_resources, system::preamble::*};
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::gpio::{Input, Level, Output, Pull, Speed};
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_stm32::init(Default::default());
+    let p = system::init();
+    let r = split_resources!(p);
     info!("Hello World!");
 
-    let mut led_o = Output::new(p.PB1, Level::High, Speed::VeryHigh);
+    let (mut led_y, _, _, _) = system::get_leds(r.leds);
+    let (mut tpwr_en, _, _, _) = system::get_tpwr(r.tpwr);
+    tpwr_en.set_high();
 
-    let mut rst = Output::new(p.PH1, Level::High, Speed::VeryHigh);
-    let rst_s = Input::new(p.PH0, Pull::Up);
-
-    let _tpwr_en = Output::new(p.PB12, Level::High, Speed::Low);
+    let (mut rst, rst_sens) = system::get_rst(r.rst);
 
     loop {
 
@@ -27,13 +27,13 @@ async fn main(_spawner: Spawner) -> ! {
         // The rst_s is also reverse logic. So we wait for it to go high
         // to confirm that the reset successfully drove the RST line low.
         info!("RST");
-        led_o.set_low();
+        led_y.set_low();
         rst.set_high();
-        while rst_s.is_low() {
-            info!("RSTs {}", rst_s.get_level());
+        while rst_sens.is_low() {
+            info!("RSTs {} awaiting High", rst_sens.get_level());
             Timer::after_millis(1).await;
         }
-        info!("RSTs {}", rst_s.get_level());
+        info!("RSTs {}", rst_sens.get_level());
 
         // Deassert RESET:
         // Setting rst low will disable the MOSFET
@@ -41,13 +41,13 @@ async fn main(_spawner: Spawner) -> ! {
         // is pulling it low will result in the device being released from reset.
         // The srt_s should return back to being Low after we release RST line.
         info!("!RST");
-        led_o.set_high();
+        led_y.set_high();
         rst.set_low();
-        while rst_s.is_high() {
-            info!("RSTs {}", rst_s.get_level());
+        while rst_sens.is_high() {
+            info!("RSTs {} awaiting Low", rst_sens.get_level());
             Timer::after_millis(1).await;
         }
-        info!("RSTs {}", rst_s.get_level());
+        info!("RSTs {}", rst_sens.get_level());
 
         Timer::after_millis(2000).await;
     }

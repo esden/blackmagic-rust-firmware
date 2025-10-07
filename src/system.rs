@@ -109,6 +109,16 @@ assign_resources! {
         rst_sens: PH0,
         rst_sens_ch: EXTI0,
     }
+    aux: AuxResources {
+        i2c_peri: I2C1,
+        can_peri: FDCAN1,
+        tim_p12_peri: TIM4,
+        pin1: PB8, // SCL/FDCAN_RX/PWM
+        pin2: PB9, // SDA/FDCAN_TX/PWM
+        // uart_p3_peri: UART4, // Only usable when tdo uart is not used
+        tim_p3_peri: TIM2,
+        pin3: PA0, // UART/ADC/PWM
+    }
 }
 
 pub mod preamble {
@@ -125,6 +135,7 @@ pub mod preamble {
         FlashResources,
         JtagResources,
         RstResources,
+        AuxResources,
     };
 }
 
@@ -342,4 +353,12 @@ pub fn get_rst<'a>(r: RstResources) -> (Output<'a>, ExtiInput<'a>) {
     let rst_sens = ExtiInput::new(r.rst_sens, r.rst_sens_ch, gpio::Pull::Up);
 
     (rst, rst_sens)
+}
+
+pub fn get_aux_gpio<'a>(r: AuxResources) -> (Output<'a>, Output<'a>, Output<'a>) {
+    (
+        Output::new(r.pin1, gpio::Level::Low, gpio::Speed::Low),
+        Output::new(r.pin2, gpio::Level::Low, gpio::Speed::Low),
+        Output::new(r.pin3, gpio::Level::Low, gpio::Speed::Low)
+    )
 }

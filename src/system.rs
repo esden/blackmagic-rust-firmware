@@ -20,6 +20,10 @@ use embassy_stm32::{
         Ospi
     },
     peripherals,
+    spi::{
+        self,
+        Spi
+    },
     time::Hertz,
     timer::{
         low_level::OutputPolarity,
@@ -299,4 +303,16 @@ pub fn get_jtag_gpio<'a>(r: JtagResources) -> (Output<'a>, Output<'a>, Output<'a
     tms.set_as_output(gpio::Speed::VeryHigh);
 
     (tckdi_en, tck, tdi, tdo, tdo_rx, tms_dir, tms)
+}
+
+pub fn get_jtag_spi_blocking<'a>(r: JtagResources) -> (Output<'a>, Output<'a>, Output<'a>, Spi<'a, mode::Blocking>) {
+    let tckdo_en = Output::new(r.tckdi_en, gpio::Level::High, gpio::Speed::Low);
+    let cs_dir = Output::new(r.tms_dir, gpio::Level::High, gpio::Speed::Low);
+    let cs = Output::new(r.tms, gpio::Level::High, gpio::Speed::VeryHigh);
+
+    let mut config = spi::Config::default();
+    config.frequency = Hertz(1_000_000);
+    let spi = Spi::new_blocking(r.spi_peri, r.tck, r.tdi, r.tdo, config);
+
+    (tckdo_en, cs_dir, cs, spi)
 }

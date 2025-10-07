@@ -87,13 +87,33 @@ assign_resources! {
         d3: PA6,
         dma: GPDMA1_CH6 = FlashDma,
     }
+    jtag: JtagResources {
+        tckdi_en: PC15,
+        spi_peri: SPI2 = JtagSpiPeri,
+        tck: PB13, // SCLK
+        tdi: PB15, // DO
+        tdo: PB14, // DI
+        tdo_rx_peri: UART4 = TdoRxPeri,
+        tdo_rx: PA1,
+        tms_dir: PC14,
+        tms: PB12, // NSS
+    }
 }
 
 pub mod preamble {
     // pub use crate::split_resources;
     pub use crate::system;
-    pub use super::{AssignedResources, LedResources, ButtonResources, UsbResources, TpwrResources,
-        UartPrimaryResources, UartSecondaryResources, FlashResources};
+    pub use super::{
+        AssignedResources,
+        LedResources,
+        ButtonResources,
+        UsbResources,
+        TpwrResources,
+        UartPrimaryResources,
+        UartSecondaryResources,
+        FlashResources,
+        JtagResources
+    };
 }
 
 bind_interrupts!(struct UartIrqs {
@@ -265,4 +285,18 @@ pub fn get_flash<'a>(r: FlashResources) -> Ospi<'a, peripherals::OCTOSPI1, mode:
         r.nss,
         r.dma,
         config)
+}
+
+pub fn get_jtag_gpio<'a>(r: JtagResources) -> (Output<'a>, Output<'a>, Output<'a>, Input<'a>, Input<'a>, Output<'a>, Flex<'a>) {
+    let tckdi_en = Output::new(r.tckdi_en, gpio::Level::Low, gpio::Speed::Low);
+    let tck = Output::new(r.tck, gpio::Level::Low, gpio::Speed::VeryHigh);
+    let tdi = Output::new(r.tdi, gpio::Level::Low, gpio::Speed::VeryHigh);
+    let tdo = Input::new(r.tdo, gpio::Pull::None);
+    let tdo_rx = Input::new(r.tdo_rx, gpio::Pull::None);
+    let tms_dir = Output::new(r.tms_dir, gpio::Level::High, gpio::Speed::Low);
+    let mut tms = Flex::new(r.tms);
+    tms.set_high();
+    tms.set_as_output(gpio::Speed::VeryHigh);
+
+    (tckdi_en, tck, tdi, tdo, tdo_rx, tms_dir, tms)
 }

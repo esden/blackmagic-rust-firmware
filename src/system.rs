@@ -94,6 +94,8 @@ assign_resources! {
     jtag: JtagResources {
         tckdi_en: PC15,
         spi_peri: SPI2 = JtagSpiPeri,
+        spi_tx_dma: GPDMA1_CH7 = JtagSpiTxDma,
+        spi_rx_dma: GPDMA1_CH8 = JtagSpiRxDma,
         tck: PB13, // SCLK
         tdi: PB15, // DO
         tdo: PB14, // DI
@@ -313,6 +315,18 @@ pub fn get_jtag_spi_blocking<'a>(r: JtagResources) -> (Output<'a>, Output<'a>, O
     let mut config = spi::Config::default();
     config.frequency = Hertz(1_000_000);
     let spi = Spi::new_blocking(r.spi_peri, r.tck, r.tdi, r.tdo, config);
+
+    (tckdo_en, cs_dir, cs, spi)
+}
+
+pub fn get_jtag_spi<'a>(r: JtagResources) -> (Output<'a>, Output<'a>, Output<'a>, Spi<'a, mode::Async>) {
+    let tckdo_en = Output::new(r.tckdi_en, gpio::Level::High, gpio::Speed::Low);
+    let cs_dir = Output::new(r.tms_dir, gpio::Level::High, gpio::Speed::Low);
+    let cs = Output::new(r.tms, gpio::Level::High, gpio::Speed::VeryHigh);
+
+    let mut config = spi::Config::default();
+    config.frequency = Hertz(1_000_000);
+    let spi = Spi::new(r.spi_peri, r.tck, r.tdi, r.tdo, r.spi_tx_dma, r.spi_rx_dma, config);
 
     (tckdo_en, cs_dir, cs, spi)
 }

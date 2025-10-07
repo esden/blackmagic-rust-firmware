@@ -1,29 +1,22 @@
 #![no_std]
 #![no_main]
 
+use blackmagic_rust_firmware::{split_resources, system::preamble::*};
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::gpio::{Level, Output, Speed};
-use embassy_stm32::spi::{Config, Spi};
-use embassy_stm32::time::Hertz;
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    let p = embassy_stm32::init(Default::default());
+    let p = system::init();
+    let r = split_resources!(p);
+
     info!("Hello World!");
 
-    let mut spi_config = Config::default();
-    spi_config.frequency = Hertz(1_000_000);
-
-    let mut spi = Spi::new(p.SPI1, p.PA5, p.PA7, p.PA6, p.GPDMA1_CH0, p.GPDMA1_CH1, spi_config);
-    let mut cs = Output::new(p.PA4, Level::High, Speed::VeryHigh);
-
-    // Set directions and enables for the frontend correctly
-    let _tckdi_en = Output::new(p.PC15, Level::High, Speed::Low);
-    let _tms_dir = Output::new(p.PB13, Level::High, Speed::Low);
-    let _tpwr_en = Output::new(p.PB12, Level::High, Speed::Low);
+    let (mut tpwr_en, _, _, _) = system::get_tpwr(r.tpwr);
+    tpwr_en.set_high();
+    let (_tckdo_en, _cs_dir, mut cs, mut spi) = system::get_jtag_spi(r.jtag);
 
     // The flash chip that is connected here over SPI is the Winbond W25Q128
     // Refer to the datasheet for protocol details

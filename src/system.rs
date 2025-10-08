@@ -14,6 +14,10 @@ use embassy_stm32::{
         Input,
         Output
     },
+    i2c::{
+        self,
+        I2c
+    },
     mode,
     ospi::{
         self,
@@ -361,4 +365,10 @@ pub fn get_aux_gpio<'a>(r: AuxResources) -> (Output<'a>, Output<'a>, Output<'a>)
         Output::new(r.pin2, gpio::Level::Low, gpio::Speed::Low),
         Output::new(r.pin3, gpio::Level::Low, gpio::Speed::Low)
     )
+}
+
+pub fn get_aux_i2c<'a>(r: AuxResources) -> I2c<'a, mode::Blocking, i2c::Master> {
+    let mut config = i2c::Config::default();
+    config.frequency = Hertz::khz(100);
+    I2c::new_blocking(r.i2c_peri, r.pin1, r.pin2, config)
 }

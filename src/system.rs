@@ -286,8 +286,12 @@ pub fn get_uart_secondary<'a>(r: UartSecondaryResources, swap_rx_tx: bool) -> (U
 }
 
 pub fn get_flash_blocking<'a>(r: FlashResources) -> Ospi<'a, peripherals::OCTOSPI1, mode::Blocking> {
-    let mut config = ospi::Config::default();
-    config.clock_prescaler = 160; // AHB 160Mhz => SCK 1MHz
+    let config = ospi::Config {
+        memory_type: ospi::MemoryType::Standard,
+        device_size: ospi::MemorySize::_16MiB,
+        clock_prescaler: 160, // AHB 160Mhz => SCK 1MHz
+        ..Default::default()
+    };
     Ospi::new_blocking_quadspi(
         r.peri,
         r.sck,
@@ -300,8 +304,12 @@ pub fn get_flash_blocking<'a>(r: FlashResources) -> Ospi<'a, peripherals::OCTOSP
 }
 
 pub fn get_flash<'a>(r: FlashResources) -> Ospi<'a, peripherals::OCTOSPI1, mode::Async> {
-    let mut config = ospi::Config::default();
-    config.clock_prescaler = 160; // AHB 160Mhz => SCK 1MHz
+    let config = ospi::Config {
+        memory_type: ospi::MemoryType::Standard,
+        device_size: ospi::MemorySize::_16MiB,
+        clock_prescaler: 160, // AHB 160Mhz => SCK 1MHz
+        ..Default::default()
+    };
     Ospi::new_quadspi(
         r.peri,
         r.sck,

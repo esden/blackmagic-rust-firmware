@@ -48,6 +48,6 @@ async fn main(_spawner: Spawner) {
         info!("JEDEC ID        {=[u8]:#x}", buf);
 
         // We need to give the RTT debug interface some breathing room. ;)
-        Timer::after_millis(1).await;
+        Timer::after_millis(10).await;
     }
 }

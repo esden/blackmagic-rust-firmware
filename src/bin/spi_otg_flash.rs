@@ -2,13 +2,15 @@
 #![no_main]
 
 use blackmagic_rust_firmware::{split_resources, system::preamble::*};
-use cortex_m_rt::entry;
 use defmt::*;
+use embassy_executor::Spawner;
 use embassy_stm32::ospi;
+use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
-#[entry]
-fn main() -> ! {
+
+#[embassy_executor::main]
+async fn main(_spawner: Spawner) {
     info!("Hello World!");
 
     let p = system::init();
@@ -28,7 +30,7 @@ fn main() -> ! {
         transfer_config.dummy = ospi::DummyCycles::_24;
         transfer_config.dwidth = ospi::OspiWidth::SING;
         unwrap!(flash.blocking_read(&mut buf, transfer_config));
-        info!("Device ID              {=u8:#x}", buf[0]);
+        info!("Device ID       {=u8:#x}", buf[0]);
 
         // Read Manufacturer and Device ID
         let mut buf = [0x00_u8; 2];
@@ -45,5 +47,7 @@ fn main() -> ! {
         transfer_config.dummy = ospi::DummyCycles::_0;
         unwrap!(flash.blocking_read(&mut buf, transfer_config));
         info!("JEDEC ID        {=[u8]:#x}", buf);
+
+        Timer::after_millis(10).await;
     }
 }

@@ -346,7 +346,7 @@ pub fn get_jtag_spi<'a>(r: JtagResources) -> (Output<'a>, Output<'a>, Output<'a>
     let cs = Output::new(r.tms, gpio::Level::High, gpio::Speed::VeryHigh);
 
     let mut config = spi::Config::default();
-    config.frequency = Hertz(1_000_000);
+    config.frequency = Hertz::khz(1);
     let spi = Spi::new(r.spi_peri, r.tck, r.tdi, r.tdo, r.spi_tx_dma, r.spi_rx_dma, config);
 
     (tckdo_en, cs_dir, cs, spi)
